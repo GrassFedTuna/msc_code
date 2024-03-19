@@ -1,0 +1,91 @@
+---
+title: "Sampling sites map"
+output: html_notebook
+---
+
+Creating a map of the Rocky River, NL, including study sites for the 2024 field season. Code taken from Milos Makes Maps( https://www.youtube.com/watch?v=tlVNJTZO2js).
+
+Load packages
+```{r}
+library(tidyverse)
+library(httr)
+library(sf)
+```
+
+
+Load data. Data is obtained from HydroSHEDS (https://www.hydrosheds.org/).
+```{r}
+get_data <- function(){
+  url <- "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_na_shp.zip"
+  res <- httr::GET(
+    url,
+    write_disk("na_river.zip"),
+    progress()
+  )
+  unzip("na_river.zip")
+  filenames <- list.files("HydroRIVERS_v10_na_shp",
+                          pattern = "*.shp", full.names = TRUE
+                          )
+  
+  return(filenames)
+}
+
+filenames <- get_data()
+```
+
+Create river width
+```{r}
+load_rivers <- function(){ #create object that we can manipulate to calculate width
+  list_riv <- lapply(filenames, sf::st_read)
+  na_riv <- list_riv[[1]] |> 
+    sf::st_cast("MULTILINESTRING")
+  
+  return(na_riv)
+}
+
+na_riv <- load_rivers()
+```
+```{r}
+set_river_width <- function() { #calculate width using new object
+  na_riv_width <- na_riv |> 
+    dplyr::mutate(
+      width = as.numeric(ORD_FLOW),
+      width = dplyr::case_when( #set width according to stream order
+        width == 4 ~ 1,
+        width == 3 ~ 0.8,
+        width == 4 ~ 0.6,
+        width == 5 ~ 0.4,
+        width == 6 ~ 0.2,
+        width == 7 ~ 0.2,
+        width == 8 ~ 0.2,
+        width == 9 ~ 0.1,
+        width == 10 ~ 0.1,
+        TRUE ~ 0
+      )
+    ) |> 
+    sf::st_as_sf()
+}
+
+na_riv_width <- set_river_width()
+```
+
+Now we can set the boundaries of our map, which will focus on the southern Avalon Peninsula, NL.
+```{r}
+crsLONGLAT <- "+proj=longlat +datum=WGS84 +no_defs" #set coordinate system
+
+get_bounding_box <- function() {
+  bbox <- st_sfc(
+    st_polygon(list(cbind(
+      c(),
+      c()
+    ))),
+    crs = crsLONGLAT
+  )
+  
+  new_prj <- sf::st_transform(bbox, crs = 4087)
+  bb <- sf::st_bbox(new_prj)
+  
+  return(bb)
+}
+```
+
