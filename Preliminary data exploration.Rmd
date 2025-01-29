@@ -1,0 +1,19 @@
+---
+title: "Preliminary data exploration"
+author: "Cameron MacPhail"
+date: "2025-01-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Preliminary exploration of non-genetic data from my MSc prooject. At this point, the genetic data has not arrived and so it's not possible to identify whether individuals are genetically from the introduced anadromous population or the native resident population. However, we can examine differences in length, weight, condition factor, etc. across the various sample sites within the Rocky River.
+
+First I will load the tidyverse
+```{r}
+library()
+```
+
